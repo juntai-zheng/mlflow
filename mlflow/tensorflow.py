@@ -585,11 +585,9 @@ def _manage_active_run(log_event=False):
     if not mlflow.active_run():
         global _AUTOLOG_RUN_ID
         if log_event and _AUTOLOG_RUN_ID:
-            print("STARTING RUN FROM PREVIOUS RUN ID")
             try_mlflow_log(mlflow.start_run, _AUTOLOG_RUN_ID)
             auto_end = True
         else:
-            print("STARTING RUN WITH NO RUN ID")
             try_mlflow_log(mlflow.start_run)
         if mlflow.active_run() is not None:  # defensive check in case `mlflow.start_run` fails
             _AUTOLOG_RUN_ID = mlflow.active_run().info.run_id
@@ -597,7 +595,6 @@ def _manage_active_run(log_event=False):
     yield mlflow.active_run()
     if mlflow.active_run() is not None and mlflow.active_run().info.run_id == _AUTOLOG_RUN_ID:
         if not log_event or (log_event and auto_end):
-            print("RUN ENDED: " + str(_AUTOLOG_RUN_ID))
             try_mlflow_log(mlflow.end_run)
 
 
@@ -606,7 +603,6 @@ def _log_event(event):
     Extracts metric information from the event protobuf
     """
     with _manage_active_run(log_event=True):
-        print("_LOG_EVENT INSIDE CONTEXT MANAGER")
         if event.WhichOneof('what') == 'summary':
             summary = event.summary
             for v in summary.value:
@@ -616,7 +612,6 @@ def _log_event(event):
                                             value=v.simple_value, step=event.step,
                                             time=int(time.time() * 1000),
                                             run_id=mlflow.active_run().info.run_id)
-    print("EXITING _LOG_MANAGER")
 
 def _get_tensorboard_callback(lst):
     for x in lst:
@@ -750,7 +745,6 @@ def autolog(every_n_iter=100):
     @gorilla.patch(tensorflow.keras.Model)
     def fit(self, *args, **kwargs):
         with _manage_active_run():
-            print("FIT STARTING INSIDE CONTEXT MANAGER")
             original = gorilla.get_original_attribute(tensorflow.keras.Model, 'fit')
 
             # Checking if the 'callback' argument of fit() is set
