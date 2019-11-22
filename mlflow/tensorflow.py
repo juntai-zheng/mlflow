@@ -579,24 +579,44 @@ def _add_to_queue(key, value, step, time, run_id):
         _flush_queue()
 
 
+@contextmanager
+def _manage_active_run(log_event=False):
+    auto_end = False
+    if not mlflow.active_run():
+        global _AUTOLOG_RUN_ID
+        if log_event and _AUTOLOG_RUN_ID:
+            print("STARTING RUN FROM PREVIOUS RUN ID")
+            try_mlflow_log(mlflow.start_run, _AUTOLOG_RUN_ID)
+            auto_end = True
+        else:
+            print("STARTING RUN WITH NO RUN ID")
+            try_mlflow_log(mlflow.start_run)
+        if mlflow.active_run() is not None:  # defensive check in case `mlflow.start_run` fails
+            _AUTOLOG_RUN_ID = mlflow.active_run().info.run_id
+            _logger.info("MLflow launching new autolog run" + str(_AUTOLOG_RUN_ID))
+    yield mlflow.active_run()
+    if mlflow.active_run() is not None and mlflow.active_run().info.run_id == _AUTOLOG_RUN_ID:
+        if not log_event or (log_event and auto_end):
+            print("RUN ENDED: " + str(_AUTOLOG_RUN_ID))
+            try_mlflow_log(mlflow.end_run)
+
+
 def _log_event(event):
     """
     Extracts metric information from the event protobuf
     """
-    if not mlflow.active_run():
-        try_mlflow_log(mlflow.start_run)
-        global _AUTOLOG_RUN_ID
-        _AUTOLOG_RUN_ID = mlflow.active_run().info.run_id
-    if event.WhichOneof('what') == 'summary':
-        summary = event.summary
-        for v in summary.value:
-            if v.HasField('simple_value'):
-                if (event.step-1) % _LOG_EVERY_N_STEPS == 0:
-                    _thread_pool.submit(_add_to_queue, key=v.tag,
-                                        value=v.simple_value, step=event.step,
-                                        time=int(time.time() * 1000),
-                                        run_id=mlflow.active_run().info.run_id)
-
+    with _manage_active_run(log_event=True):
+        print("_LOG_EVENT INSIDE CONTEXT MANAGER")
+        if event.WhichOneof('what') == 'summary':
+            summary = event.summary
+            for v in summary.value:
+                if v.HasField('simple_value'):
+                    if (event.step-1) % _LOG_EVERY_N_STEPS == 0:
+                        _thread_pool.submit(_add_to_queue, key=v.tag,
+                                            value=v.simple_value, step=event.step,
+                                            time=int(time.time() * 1000),
+                                            run_id=mlflow.active_run().info.run_id)
+    print("EXITING _LOG_MANAGER")
 
 def _get_tensorboard_callback(lst):
     for x in lst:
@@ -658,17 +678,6 @@ def autolog(every_n_iter=100):
                       "1.12 <= v <= 2.0.0 are supported.")
         return
 
-    @contextmanager
-    def _manage_active_run():
-        if not mlflow.active_run():
-            try_mlflow_log(mlflow.start_run)
-            global _AUTOLOG_RUN_ID
-            if mlflow.active_run() is not None:  # defensive check in case `mlflow.start_run` fails
-                _AUTOLOG_RUN_ID = mlflow.active_run().info.run_id
-        yield mlflow.active_run()
-        if mlflow.active_run() is not None and mlflow.active_run().info.run_id == _AUTOLOG_RUN_ID:
-            try_mlflow_log(mlflow.end_run)
-
     @gorilla.patch(tensorflow.estimator.Estimator)
     def train(self, *args, **kwargs):
         with _manage_active_run():
@@ -698,6 +707,8 @@ def autolog(every_n_iter=100):
             else:
                 try_mlflow_log(mlflow.start_run)
                 auto_end = True
+                _logger.info("MLflow launching new autolog run" +
+                             str(mlflow.active_run().info.run_id))
 
         original = gorilla.get_original_attribute(tensorflow.estimator.Estimator,
                                                   'export_saved_model')
@@ -721,6 +732,8 @@ def autolog(every_n_iter=100):
             else:
                 try_mlflow_log(mlflow.start_run)
                 auto_end = True
+                _logger.info("MLflow launching new autolog run" +
+                             str(mlflow.active_run().info.run_id))
 
         original = gorilla.get_original_attribute(tensorflow.estimator.Estimator,
                                                   'export_savedmodel')
@@ -737,6 +750,7 @@ def autolog(every_n_iter=100):
     @gorilla.patch(tensorflow.keras.Model)
     def fit(self, *args, **kwargs):
         with _manage_active_run():
+            print("FIT STARTING INSIDE CONTEXT MANAGER")
             original = gorilla.get_original_attribute(tensorflow.keras.Model, 'fit')
 
             # Checking if the 'callback' argument of fit() is set
@@ -752,7 +766,6 @@ def autolog(every_n_iter=100):
             _flush_queue()
             _log_artifacts_with_warning(local_dir=log_dir, artifact_path='tensorboard_logs')
             shutil.rmtree(log_dir)
-
             return result
 
     @gorilla.patch(tensorflow.keras.Model)

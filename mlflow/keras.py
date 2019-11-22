@@ -16,6 +16,7 @@ import yaml
 import gorilla
 import tempfile
 import shutil
+import logging
 
 import pandas as pd
 
@@ -32,6 +33,7 @@ from mlflow.utils.autologging_utils import try_mlflow_log
 
 
 FLAVOR_NAME = "keras"
+_logger = logging.getLogger(__name__)
 # File name to which custom objects cloudpickle is saved - used during save and load
 _CUSTOM_OBJECTS_SAVE_PATH = "custom_objects.cloudpickle"
 _KERAS_MODULE_SPEC_PATH = "keras_module.txt"
@@ -424,6 +426,7 @@ def autolog():
         if not mlflow.active_run():
             try_mlflow_log(mlflow.start_run)
             auto_end_run = True
+            _logger.info("MLflow launching new autolog run" + str(mlflow.active_run().info.run_id))
         else:
             auto_end_run = False
 
@@ -449,6 +452,7 @@ def autolog():
         if not mlflow.active_run():
             try_mlflow_log(mlflow.start_run)
             auto_end_run = True
+            _logger.info("MLflow launching new autolog run" + str(mlflow.active_run().info.run_id))
         else:
             auto_end_run = False
 

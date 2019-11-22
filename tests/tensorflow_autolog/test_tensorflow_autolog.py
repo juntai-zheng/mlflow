@@ -222,6 +222,10 @@ def create_tf_estimator_model(dir, export):
     classifier.train(
         input_fn=lambda: input_fn(train, train_y, training=True),
         steps=500)
+
+    classifier.evaluate(
+        input_fn=lambda: input_fn(test, test_y, training=False))
+
     if export:
         classifier.export_saved_model(dir, receiver_fn)
 
