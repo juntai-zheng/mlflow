@@ -426,7 +426,8 @@ def autolog():
         if not mlflow.active_run():
             try_mlflow_log(mlflow.start_run)
             auto_end_run = True
-            _logger.info("MLflow launching new autolog run" + str(mlflow.active_run().info.run_id))
+            _logger.info("MLflow launching new autolog run %s",
+                         str(mlflow.active_run().info.run_id))
         else:
             auto_end_run = False
 
@@ -452,7 +453,8 @@ def autolog():
         if not mlflow.active_run():
             try_mlflow_log(mlflow.start_run)
             auto_end_run = True
-            _logger.info("MLflow launching new autolog run" + str(mlflow.active_run().info.run_id))
+            _logger.info("MLflow launching new autolog run %s",
+                         str(mlflow.active_run().info.run_id))
         else:
             auto_end_run = False
 

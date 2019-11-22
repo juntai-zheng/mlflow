@@ -591,7 +591,7 @@ def _manage_active_run(log_event=False):
             try_mlflow_log(mlflow.start_run)
         if mlflow.active_run() is not None:  # defensive check in case `mlflow.start_run` fails
             _AUTOLOG_RUN_ID = mlflow.active_run().info.run_id
-            _logger.info("MLflow launching new autolog run" + str(_AUTOLOG_RUN_ID))
+            _logger.info("MLflow launching new autolog run %s", str(_AUTOLOG_RUN_ID))
     yield mlflow.active_run()
     if mlflow.active_run() is not None and mlflow.active_run().info.run_id == _AUTOLOG_RUN_ID:
         if not log_event or (log_event and auto_end):
@@ -612,6 +612,7 @@ def _log_event(event):
                                             value=v.simple_value, step=event.step,
                                             time=int(time.time() * 1000),
                                             run_id=mlflow.active_run().info.run_id)
+
 
 def _get_tensorboard_callback(lst):
     for x in lst:
@@ -702,7 +703,7 @@ def autolog(every_n_iter=100):
             else:
                 try_mlflow_log(mlflow.start_run)
                 auto_end = True
-                _logger.info("MLflow launching new autolog run" +
+                _logger.info("MLflow launching new autolog run %s",
                              str(mlflow.active_run().info.run_id))
 
         original = gorilla.get_original_attribute(tensorflow.estimator.Estimator,
@@ -727,7 +728,7 @@ def autolog(every_n_iter=100):
             else:
                 try_mlflow_log(mlflow.start_run)
                 auto_end = True
-                _logger.info("MLflow launching new autolog run" +
+                _logger.info("MLflow launching new autolog run %s",
                              str(mlflow.active_run().info.run_id))
 
         original = gorilla.get_original_attribute(tensorflow.estimator.Estimator,
