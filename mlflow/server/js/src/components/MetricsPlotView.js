@@ -21,7 +21,6 @@ export class MetricsPlotView extends React.Component {
     isComparing: PropTypes.bool.isRequired,
     yAxisLogScale: PropTypes.bool.isRequired,
     lineSmoothness: PropTypes.number,
-    popoverVisible: PropTypes.bool,
     onClick: PropTypes.func,
   };
 
@@ -133,5 +132,16 @@ export class MetricsPlotView extends React.Component {
         />
       </div>
     );
+  }
+
+  componentDidUpdate(prevProps, prevState) {
+    Object.entries(this.props).forEach(([key, val]) =>
+      prevProps[key] !== val && console.log(`Prop '${key}' changed`)
+    );
+    if (this.state) {
+      Object.entries(this.state).forEach(([key, val]) =>
+        prevState[key] !== val && console.log(`State '${key}' changed`)
+      );
+    }
   }
 }

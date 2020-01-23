@@ -224,7 +224,6 @@ export class MetricsPlotPanel extends React.Component {
             isComparing={MetricsPlotPanel.isComparing(location.search)}
             yAxisLogScale={yAxisLogScale}
             lineSmoothness={lineSmoothness}
-            popoverVisible={popoverVisible}
             onClick={this.updatePopover}
           />
         </RequestStateWrapper>
