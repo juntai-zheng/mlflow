@@ -1,6 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import { Popover } from 'antd';
+import {X_AXIS_RELATIVE} from "./MetricsPlotControls";
 
 class RunLinksPopover extends React.Component {
   static propTypes = {
@@ -11,8 +12,21 @@ class RunLinksPopover extends React.Component {
     runsData: PropTypes.arrayOf(Object).isRequired,
   };
 
+  constructor(props) {
+    super(props);
+    this.state = {
+      // states for RunLinkPopover
+      popoverVisible: false,
+      popoverX: 0,
+      popoverY: 0,
+      clickedRunUuid: '',
+      clickedPointIndex: null,
+      runsData: [],
+    };
+  }
+
   renderPopoverContent = () => {
-    const { runsData } = this.props;
+    const { runsData } = this.state;
     return (
       <div>
         {runsData.map(({ runUuid, color }) => (
@@ -39,19 +53,19 @@ class RunLinksPopover extends React.Component {
   };
 
   render() {
-    const { x, y, visible } = this.props;
+    const { popoverX, popoverY, popoverVisible } = this.state;
     return (
       <Popover
         content={this.renderPopoverContent()}
         title={this.renderTitle()}
         placement="topLeft"
-        visible={visible}
+        visible={popoverVisible}
       >
         {/* dummy div to control the position of the popover */}
         <div
           style={{
-            left: x,
-            top: y,
+            left: popoverX,
+            top: popoverY,
             position: 'absolute',
           }}
         />

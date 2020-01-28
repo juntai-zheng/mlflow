@@ -52,6 +52,7 @@ export class MetricsPlotPanel extends React.Component {
       clickedPointIndex: null,
       runsData: [],
     };
+    this.popoverRef = React.createRef();
     this.isClicked = false;
     this.loadMetricHistory(this.props.runUuids, selectedMetricKeys);
   }
@@ -136,9 +137,9 @@ export class MetricsPlotPanel extends React.Component {
 
   handleLineSmoothChange = (lineSmoothness) => this.setState({ lineSmoothness });
 
-  showPopover = () => this.setState({ popoverVisible: true })
+  showPopover = () => this.popoverRef.current.setState({ popoverVisible: true })
 
-  hidePopover = () => this.setState({ popoverVisible: false })
+  hidePopover = () => this.popoverRef.current.setState({ popoverVisible: false })
 
   updatePopover = (data) => {
     this.isClicked = !this.isClicked;
@@ -147,7 +148,7 @@ export class MetricsPlotPanel extends React.Component {
     setTimeout(() => {
       if (this.isClicked) {
         this.isClicked = false;
-        this.setState({ isOpen: !this.state.isOpen});
+        // this.setState({ isOpen: !this.state.isOpen});
         const { popoverVisible, clickedRunUuid, clickedPointIndex } = this.state;
         const { points, event } = data;
         const clickedDifferentPoint =
@@ -158,7 +159,10 @@ export class MetricsPlotPanel extends React.Component {
           color: point.fullData.marker.color,
           runUuid: point.data.runUuid,
         }));
-        this.setState({
+        // Instead of setting state on MetricPlotPanel (current component), should
+        // call a method on the Popover directly via the ref
+        const popover = this.popoverRef.current;
+        popover.setState({
           popoverVisible: !popoverVisible || clickedDifferentPoint,
           popoverX: event.clientX,
           popoverY: event.clientY,
@@ -184,6 +188,7 @@ export class MetricsPlotPanel extends React.Component {
       popoverY,
       runsData,
     } = this.state;
+    // console.log("hi from MetricsPlotPanel");
     const metrics = this.getMetrics();
     const chartType = MetricsPlotPanel.predictChartType(metrics);
     return (
@@ -212,6 +217,7 @@ export class MetricsPlotPanel extends React.Component {
             y={popoverY}
             runsData={runsData}
             onCloseClick={this.hidePopover}
+            ref={this.popoverRef}
           />
           <MetricsPlotView
             runUuids={runUuids}
@@ -230,6 +236,18 @@ export class MetricsPlotPanel extends React.Component {
       </div>
     );
   }
+
+  // componentDidUpdate(prevProps, prevState) {
+  //   Object.entries(this.props).forEach(([key, val]) =>
+  //       prevProps[key] !== val && console.log(`Prop '${key}' changed`)
+  //   );
+  //   if (this.state) {
+  //     Object.entries(this.state).forEach(([key, val]) =>
+  //         prevState[key] !== val && console.log(`State '${key}' changed`)
+  //     );
+  //   }
+  // }
+
 }
 
 const mapStateToProps = (state, ownProps) => {
