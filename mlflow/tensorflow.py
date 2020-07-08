@@ -691,7 +691,7 @@ def _setup_callbacks(lst):
 
 
 @experimental
-def autolog(every_n_iter=100):
+def autolog(every_n_iter=1):
     # pylint: disable=E0611
     """
     Enables automatic logging from TensorFlow to MLflow.
